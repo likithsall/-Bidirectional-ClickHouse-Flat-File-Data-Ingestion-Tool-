@@ -1,7 +1,14 @@
-Develop a outline Html code which I can modify as per my requirements
+I have used Chat Gpt 4.0 and Claude.ai for the question.
 
-How does JWT Authentication work
+How does JWT Authentication work?
+
+How can I structure an HTML form that toggles between ClickHouse and Flat File as the data source, dynamically showing relevant input fields using pure JavaScript?
 
 What is Clickhouse Database?
 
-Extend a write the springboot code alligning with the frontend requirements
+How should I handle and display errors on the frontend, such as invalid JWT tokens or file upload issues, with user-friendly messages?
+
+How can I execute a query in ClickHouse to fetch selected columns from a given table using the Java client and stream it to a CSV file efficiently?
+
+Modify and make the given readme file into something more presentable and easy understanding? ( I had made a readme.md file based on my logic of code)
+
