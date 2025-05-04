@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickHouse & Flat File Data Ingestion Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .section-title {
+            margin-top: 0;
+            color: #2980b9;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], 
+        input[type="number"],
+        input[type="file"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .direction-selector {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        
+        .direction-btn {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            width: 45%;
+            text-align: center;
+        }
+        
+        .direction-btn.active {
+            background-color: #2980b9;
+            color: white;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .btn-success {
+            background-color: #2ecc71;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .status-area {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 60px;
+        }
+        
+        .result-area {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f7fa;
+            border: 1px solid #cae6f1;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+        
+        .column-selector {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .column-item {
+            margin-bottom: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            background-color: #fadbd8;
+            border: 1px solid #e74c3c;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .success-message {
+            color: #27ae60;
+            background-color: #d4f6d9;
+            border: 1px solid #27ae60;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background-color: #3498db;
+            transition: width 0.5s;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+        }
+        
+        /* Table styling for data preview */
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .preview-table th, .preview-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .preview-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        .preview-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .join-section {
+            padding: 15px;
+            background-color: #f0f7fa;
+            border: 1px solid #cae6f1;
+            border-radius: 4px;
+            margin-top: 15px;
+        }
+        
+        .join-table-selector {
+            margin-bottom: 15px;
+        }
+        
+        .table-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ClickHouse & Flat File Data Ingestion Tool</h1>
+        
+        <!-- Direction Selector -->
+        <div class="section">
+            <h2 class="section-title">Data Flow Direction</h2>
+            <div class="direction-selector">
+                <div class="direction-btn active" id="clickhouse-to-flatfile">ClickHouse → Flat File</div>
+                <div class="direction-btn" id="flatfile-to-clickhouse">Flat File → ClickHouse</div>
+            </div>
+        </div>
+        
+        <!-- ClickHouse Connection Configuration -->
+        <div class="section" id="clickhouse-config">
+            <h2 class="section-title">ClickHouse Configuration</h2>
+            <div class="form-group">
+                <label for="ch-host">Host:</label>
+                <input type="text" id="ch-host" placeholder="localhost or IP address">
+            </div>
+            
+            <div class="form-group">
+                <label for="ch-port">Port:</label>
+                <input type="number" id="ch-port" placeholder="9440 for HTTPS or 8123 for HTTP">
+            </div>
+            
+            <div class="form-group">
+                <label for="ch-database">Database:</label>
+                <input type="text" id="ch-database" placeholder="default">
+            </div>
+            
+            <div class="form-group">
+                <label for="ch-user">User:</label>
+                <input type="text" id="ch-user" placeholder="default">
+            </div>
+            
+            <div class="form-group">
+                <label for="ch-jwt">JWT Token:</label>
+                <input type="text" id="ch-jwt" placeholder="Enter JWT token">
+            </div>
+            
+            <button class="btn" id="ch-connect-btn">Connect to ClickHouse</button>
+        </div>
+        
+        <!-- Flat File Configuration -->
+        <div class="section" id="flatfile-config">
+            <h2 class="section-title">Flat File Configuration</h2>
+            
+            <div id="flatfile-as-source">
+                <div class="form-group">
+                    <label for="flatfile-upload">Select File:</label>
+                    <input type="file" id="flatfile-upload" accept=".csv,.tsv,.txt">
+                </div>
+                
+                <div class="form-group">
+                    <label for="delimiter">Delimiter:</label>
+                    <select id="delimiter">
+                        <option value=",">Comma (,)</option>
+                        <option value="\t">Tab (\t)</option>
+                        <option value=";">Semicolon (;)</option>
+                        <option value="|">Pipe (|)</option>
+                        <option value=" ">Space ( )</option>
+                    </select>
+                </div>
+                
+                <button class="btn" id="file-load-btn">Load File Schema</button>
+            </div>
+            
+            <div id="flatfile-as-target" class="hidden">
+                <div class="form-group">
+                    <label for="output-filename">Output Filename:</label>
+                    <input type="text" id="output-filename" placeholder="output.csv">
+                </div>
+                
+                <div class="form-group">
+                    <label for="output-delimiter">Output Delimiter:</label>
+                    <select id="output-delimiter">
+                        <option value=",">Comma (,)</option>
+                        <option value="\t">Tab (\t)</option>
+                        <option value=";">Semicolon (;)</option>
+                        <option value="|">Pipe (|)</option>
+                        <option value=" ">Space ( )</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Table Selection (for ClickHouse as source) -->
+        <div class="section hidden" id="table-selection">
+            <h2 class="section-title">Table Selection</h2>
+            <div class="form-group">
+                <label for="table-select">Select Table:</label>
+                <select id="table-select">
+                    <option value="">-- Select a Table --</option>
+                </select>
+            </div>
+            
+            <!-- Bonus: Multi-Table Join -->
+            <div class="join-section hidden" id="join-section">
+                <h3>Multiple Table Join (Optional)</h3>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="enable-join"> Enable Table Join
+                    </label>
+                </div>
+                
+                <div id="join-config" class="hidden">
+                    <div class="join-table-selector">
+                        <h4>Select Additional Tables:</h4>
+                        <div class="table-list" id="join-table-list">
+                            <!-- Tables will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="join-condition">JOIN Condition:</label>
+                        <input type="text" id="join-condition" placeholder="table1.id = table2.id">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="join-type">JOIN Type:</label>
+                        <select id="join-type">
+                            <option value="INNER">INNER JOIN</option>
+                            <option value="LEFT">LEFT JOIN</option>
+                            <option value="RIGHT">RIGHT JOIN</option>
+                            <option value="FULL">FULL JOIN</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn" id="load-columns-btn">Load Columns</button>
+        </div>
+        
+        <!-- Column Selection -->
+        <div class="section hidden" id="column-selection">
+            <h2 class="section-title">Column Selection</h2>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="select-all-columns"> Select All Columns
+                </label>
+            </div>
+            
+            <div class="column-selector" id="columns-container">
+                <!-- Columns will be populated here -->
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px;">
+                <button class="btn btn-success" id="preview-btn">Preview Data</button>
+            </div>
+        </div>
+        
+        <!-- Data Preview -->
+        <div class="section hidden" id="data-preview">
+            <h2 class="section-title">Data Preview</h2>
+            <div class="result-area" id="preview-content">
+                <!-- Preview data will be displayed here -->
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="section hidden" id="action-section">
+            <button class="btn btn-success" id="start-ingestion-btn">Start Data Ingestion</button>
+            <button class="btn btn-secondary" id="reset-btn">Reset</button>
+        </div>
+        
+        <!-- Status Area -->
+        <div class="status-area" id="status-area">
+            <p>Ready to configure data ingestion.</p>
+        </div>
+        
+        <!-- Progress Bar (Optional) -->
+        <div class="progress-container hidden" id="progress-container">
+            <div class="progress-bar" id="progress-bar">0%</div>
+        </div>
+        
+        <!-- Result Area -->
+        <div class="result-area hidden" id="result-area">
+            <!-- Results will be shown here -->
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const directionBtns = document.querySelectorAll('.direction-btn');
+        const chToFlatBtn = document.getElementById('clickhouse-to-flatfile');
+        const flatToChBtn = document.getElementById('flatfile-to-clickhouse');
+        const flatfileAsSource = document.getElementById('flatfile-as-source');
+        const flatfileAsTarget = document.getElementById('flatfile-as-target');
+        const chConnectBtn = document.getElementById('ch-connect-btn');
+        const fileLoadBtn = document.getElementById('file-load-btn');
+        const tableSelection = document.getElementById('table-selection');
+        const tableSelect = document.getElementById('table-select');
+        const loadColumnsBtn = document.getElementById('load-columns-btn');
+        const columnSelection = document.getElementById('column-selection');
+        const selectAllColumns = document.getElementById('select-all-columns');
+        const columnsContainer = document.getElementById('columns-container');
+        const previewBtn = document.getElementById('preview-btn');
+        const dataPreview = document.getElementById('data-preview');
+        const previewContent = document.getElementById('preview-content');
+        const startIngestionBtn = document.getElementById('start-ingestion-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const statusArea = document.getElementById('status-area');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const resultArea = document.getElementById('result-area');
+        const actionSection = document.getElementById('action-section');
+        const enableJoin = document.getElementById('enable-join');
+        const joinConfig = document.getElementById('join-config');
+        const joinSection = document.getElementById('join-section');
+        
+        // Direction Selection
+        directionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                directionBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                if (btn.id === 'clickhouse-to-flatfile') {
+                    flatfileAsSource.classList.add('hidden');
+                    flatfileAsTarget.classList.remove('hidden');
+                    joinSection.classList.remove('hidden');
+                } else {
+                    flatfileAsSource.classList.remove('hidden');
+                    flatfileAsTarget.classList.add('hidden');
+                    joinSection.classList.add('hidden');
+                }
+                
+                // Reset UI state
+                resetUIState();
+            });
+        });
+        
+        // Connect to ClickHouse
+        chConnectBtn.addEventListener('click', () => {
+            const host = document.getElementById('ch-host').value;
+            const port = document.getElementById('ch-port').value;
+            const database = document.getElementById('ch-database').value;
+            const user = document.getElementById('ch-user').value;
+            const jwt = document.getElementById('ch-jwt').value;
+            
+            if (!host || !port || !database || !user || !jwt) {
+                updateStatus('Please fill in all ClickHouse connection fields', 'error');
+                return;
+            }
+            
+            updateStatus('Connecting to ClickHouse...', 'info');
+            
+            // Simulate connection to ClickHouse (would be replaced with actual API call)
+            setTimeout(() => {
+                // Mock data - in real app this would come from backend
+                const mockTables = ['uk_price_paid', 'ontime', 'hits', 'visits'];
+                
+                // Populate table select dropdown
+                tableSelect.innerHTML = '<option value="">-- Select a Table --</option>';
+                mockTables.forEach(table => {
+                    const option = document.createElement('option');
+                    option.value = table;
+                    option.textContent = table;
+                    tableSelect.appendChild(option);
+                });
+                
+                // Populate join tables
+                const joinTableList = document.getElementById('join-table-list');
+                joinTableList.innerHTML = '';
+                mockTables.forEach(table => {
+                    const div = document.createElement('div');
+                    div.className = 'column-item';
+                    div.innerHTML = `
+                        <label>
+                            <input type="checkbox" class="join-table-checkbox" value="${table}"> ${table}
+                        </label>
+                    `;
+                    joinTableList.appendChild(div);
+                });
+                
+                updateStatus('Connected to ClickHouse successfully!', 'success');
+                tableSelection.classList.remove('hidden');
+            }, 1000);
+        });
+        
+        // Load Flat File Schema
+        fileLoadBtn.addEventListener('click', () => {
+            const fileInput = document.getElementById('flatfile-upload');
+            const delimiter = document.getElementById('delimiter').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                updateStatus('Please select a file first', 'error');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            updateStatus(`Loading schema from ${file.name}...`, 'info');
+            
+            // In a real app, this would read the file and parse it
+            // Here we'll simulate it with mock data
+            setTimeout(() => {
+                // Mock columns
+                const mockColumns = ['id', 'name', 'price', 'date', 'category', 'description', 'status'];
+                populateColumns(mockColumns);
+                
+                updateStatus('File schema loaded successfully!', 'success');
+                columnSelection.classList.remove('hidden');
+                dataPreview.classList.add('hidden');
+                actionSection.classList.remove('hidden');
+            }, 1000);
+        });
+        
+        // Load Table Columns
+        loadColumnsBtn.addEventListener('click', () => {
+            const selectedTable = tableSelect.value;
+            
+            if (!selectedTable) {
+                updateStatus('Please select a table first', 'error');
+                return;
+            }
+            
+            updateStatus(`Loading columns for table ${selectedTable}...`, 'info');
+            
+            // In a real app, this would fetch columns from the API
+            // Here we'll simulate it with mock data
+            setTimeout(() => {
+                // Mock columns based on selected table
+                let mockColumns;
+                if (selectedTable === 'uk_price_paid') {
+                    mockColumns = ['id', 'price', 'date_of_transfer', 'postcode', 'property_type', 'new_build_flag', 'tenure_type', 'locality', 'town_city', 'district', 'county'];
+                } else if (selectedTable === 'ontime') {
+                    mockColumns = ['Year', 'Quarter', 'Month', 'DayofMonth', 'DayOfWeek', 'FlightDate', 'UniqueCarrier', 'AirlineID', 'Carrier', 'TailNum', 'FlightNum', 'OriginAirportID', 'OriginCityName', 'DestAirportID', 'DestCityName', 'DepTime', 'ArrTime', 'ArrDelay', 'DepDelay'];
+                } else {
+                    mockColumns = ['id', 'name', 'value', 'timestamp', 'source', 'category'];
+                }
+                
+                populateColumns(mockColumns);
+                
+                updateStatus('Columns loaded successfully!', 'success');
+                columnSelection.classList.remove('hidden');
+                dataPreview.classList.add('hidden');
+                actionSection.classList.remove('hidden');
+            }, 1000);
+        });
+        
+        // Enable Join Checkbox
+        enableJoin.addEventListener('change', () => {
+            if (enableJoin.checked) {
+                joinConfig.classList.remove('hidden');
+            } else {
+                joinConfig.classList.add('hidden');
+            }
+        });
+        
+        // Select All Columns
+        selectAllColumns.addEventListener('change', () => {
+            const columnCheckboxes = document.querySelectorAll('.column-checkbox');
+            columnCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllColumns.checked;
+            });
+        });
+        
+        // Preview Data
+        previewBtn.addEventListener('click', () => {
+            const selectedColumns = getSelectedColumns();
+            
+            if (selectedColumns.length === 0) {
+                updateStatus('Please select at least one column to preview', 'error');
+                return;
+            }
+            
+            updateStatus('Generating data preview...', 'info');
+            
+            // In a real app, this would fetch preview data from the API
+            // Here we'll simulate it with mock data
+            setTimeout(() => {
+                // Generate mock preview data
+                const previewData = generateMockPreviewData(selectedColumns, 10);
+                
+                // Create HTML table for preview
+                let tableHtml = '<table class="preview-table"><thead><tr>';
+                selectedColumns.forEach(column => {
+                    tableHtml += `<th>${column}</th>`;
+                });
+                tableHtml += '</tr></thead><tbody>';
+                
+                previewData.forEach(row => {
+                    tableHtml += '<tr>';
+                    selectedColumns.forEach(column => {
+                        tableHtml += `<td>${row[column]}</td>`;
+                    });
+                    tableHtml += '</tr>';
+                });
+                
+                tableHtml += '</tbody></table>';
+                
+                previewContent.innerHTML = tableHtml;
+                dataPreview.classList.remove('hidden');
+                updateStatus('Preview data generated successfully!', 'success');
+            }, 1000);
+        });
+        
+        // Start Ingestion
+        startIngestionBtn.addEventListener('click', () => {
+            const selectedColumns = getSelectedColumns();
+            
+            if (selectedColumns.length === 0) {
+                updateStatus('Please select at least one column to ingest', 'error');
+                return;
+            }
+            
+            const direction = chToFlatBtn.classList.contains('active') ? 'ClickHouse to Flat File' : 'Flat File to ClickHouse';
+            updateStatus(`Starting ${direction} ingestion...`, 'info');
+            
+            // Show progress bar
+            progressContainer.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+            
+            // Simulate ingestion progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    
+                    // In a real app, this would be the actual count from the backend
+                    const recordCount = Math.floor(Math.random() * 10000) + 1000;
+                    
+                    resultArea.classList.remove('hidden');
+                    resultArea.innerHTML = `
+                        <div class="success-message">
+                            <h3>Ingestion Completed Successfully!</h3>
+                            <p>Total records processed: <strong>${recordCount.toLocaleString()}</strong></p>
+                        </div>
+                    `;
+                    
+                    updateStatus('Data ingestion completed successfully!', 'success');
+                }
+            }, 300);
+        });
+        
+        // Reset Button
+        resetBtn.addEventListener('click', () => {
+            resetUIState();
+            updateStatus('Form has been reset. Ready to configure data ingestion.', 'info');
+        });
+        
+        // Helper functions
+        function updateStatus(message, type = 'info') {
+            const statusElement = document.createElement('p');
+            statusElement.textContent = message;
+            
+            if (type === 'error') {
+                statusElement.className = 'error-message';
+            } else if (type === 'success') {
+                statusElement.className = 'success-message';
+            }
+            
+            statusArea.innerHTML = '';
+            statusArea.appendChild(statusElement);
+        }
+        
+        function populateColumns(columns) {
+            columnsContainer.innerHTML = '';
+            
+            columns.forEach(column => {
+                const div = document.createElement('div');
+                div.className = 'column-item';
+                div.innerHTML = `
+                    <label>
+                        <input type="checkbox" class="column-checkbox" value="${column}"> ${column}
+                    </label>
+                `;
+                columnsContainer.appendChild(div);
+            });
+            
+            // Reset select all checkbox
+            selectAllColumns.checked = false;
+        }
+        
+        function getSelectedColumns() {
+            const selectedColumns = [];
+            const columnCheckboxes = document.querySelectorAll('.column-checkbox:checked');
+            
+            columnCheckboxes.forEach(checkbox => {
+                selectedColumns.push(checkbox.value);
+            });
+            
+            return selectedColumns;
+        }
+        
+        function generateMockPreviewData(columns, rowCount) {
+            const data = [];
+            
+            for (let i = 0; i < rowCount; i++) {
+                const row = {};
+                
+                columns.forEach(column => {
+                    // Generate mock data based on column name
+                    if (column.toLowerCase().includes('id')) {
+                        row[column] = Math.floor(Math.random() * 10000);
+                    } else if (column.toLowerCase().includes('date') || column.toLowerCase().includes('time')) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - Math.floor(Math.random() * 365));
+                        row[column] = date.toISOString().split('T')[0];
+                    } else if (column.toLowerCase().includes('price') || column.toLowerCase().includes('value')) {
+                        row[column] = (Math.random() * 1000).toFixed(2);
+                    } else if (column.toLowerCase().includes('name')) {
+                        const names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
+                        row[column] = names[Math.floor(Math.random() * names.length)];
+                    } else {
+                        row[column] = `Sample ${column} ${i+1}`;
+                    }
+                });
+                
+                data.push(row);
+            }
+            
+            return data;
+        }
+        
+        function resetUIState() {
+            tableSelection.classList.add('hidden');
+            columnSelection.classList.add('hidden');
+            dataPreview.classList.add('hidden');
+            actionSection.classList.add('hidden');
+            progressContainer.classList.add('hidden');
+            resultArea.classList.add('hidden');
+            
+            // Reset table selection
+            tableSelect.innerHTML = '<option value="">-- Select a Table --</option>';
+            
+            // Reset columns
+            columnsContainer.innerHTML = '';
+            
+            // Reset preview
+            previewContent.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
