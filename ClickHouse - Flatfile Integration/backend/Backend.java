@@ -1,4 +1,3 @@
-// Let's start with the project structure and essential files
 
 // pom.xml
 <?xml version="1.0" encoding="UTF-8"?>
