@@ -1,0 +1,7 @@
+Develop a outline Html code which I can modify as per my requirements
+
+How does JWT Authentication work
+
+What is Clickhouse Database?
+
+Extend a write the springboot code alligning with the frontend requirements
